@@ -1,6 +1,6 @@
 library(PCDSpline)
 library(HI)
-load("C:/Users/wangl/Dropbox/project_lin/realdata/skinTumor.rda")
+load("C:/skinTumor.rda")
 
 n<-max(skinTumor$id)
 #record the number of observations for all patients
@@ -337,35 +337,5 @@ estblseqt = estRl%*%blseqt
 estblseqtq = estRlq %*%blseqt
 
 round(cbind(estbeta, estbeta1std1,t(estbetaq)),4)
-
-estDens_2 = read.table("e:/density.txt")
-plot(t_s,c(t(as.matrix(estDens_2))),lty=3,type = "l",col="blue",xlab = expression(phi),ylab = "Estimated Frailty Density" )
-points(t_s,estDenW,lty=1,type = "l")
-legend(4,0.7,legend = c('DPGM-PM','GFPM'), col = c('black','blue'),lty = c(1,3),cex = 1)
-
-plot(seqt,estblseqt,type = "l", ylab = "Estimated Mean Function",xlab = "Observation Time (Days)")
-
-# draw the posterior distribution for beta_2 AND beta_3
-#install.packages("ggplot2")
-#install.packages("patchwork")
-library(ggplot2)
-library(patchwork)
-beta_m <- data.frame(parBeta[seq((burnin+1), total),])
-hist1 = ggplot(data = beta_m, aes(x=X2)) +
-  geom_histogram(mapping = aes(y=after_stat(density), alpha= 0.5)) + # Adjust binwidth as needed
-  geom_density() +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  labs(x = expression(beta[2])) # Using expression() for Greek letter
-
-# For hist2 with x-axis label as beta_3 in Greek
-hist2 = ggplot(data = beta_m, aes(x=X3)) +
-  geom_histogram(mapping = aes(y=after_stat(density), alpha= 0.5)) + # Adjust binwidth as needed
-  geom_density() +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  labs(x = expression(beta[3])) # Using expression() for Greek letter
-
-hist1 + hist2
 
 
