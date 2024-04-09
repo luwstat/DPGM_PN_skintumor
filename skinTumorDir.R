@@ -1,28 +1,10 @@
+####### Load the necessary R packages ##############
 library(PCDSpline)
 library(HI)
-load("C:/skinTumor.rda")
-
-n<-max(skinTumor$id)
-#record the number of observations for all patients
-k<-as.numeric(table(skinTumor$id))
-K<-max(k)
-tz<-matrix(,n,2*K)
-x1<-c();x2<-c();x3<-c();x4<-c();
-for (r in 1:n){
-  rownum<-which(skinTumor$id==r)
-  #record all observation times
-  tz[r,1:(2*k[r])]<-c(skinTumor[rownum,]$time, skinTumor[rownum,]$count)
-  x1[r]<-skinTumor[which(skinTumor$id==r),]$age[1]
-  x2[r]<-skinTumor[which(skinTumor$id==r),]$male[1]
-  x3[r]<-skinTumor[which(skinTumor$id==r),]$dfmo[1];
-  x4[r]<-skinTumor[which(skinTumor$id==r),]$priorTumor[1]
-}
-X<-cbind((x1-mean(x1))/sd(x1),x2,x3,(x4-mean(x4))/sd(x4))
-
-G<-cbind(X,tz)
+####################################################
 
 ##############################################################################
-# Ispline and arms preparation 
+#  Define functions for Ispline and arms
 ##############################################################################
 #Ispline function; n(spline function) = n(knots) + order -2; return results of n spline function for each value in x.
 Ispline<-function(x,order,knots){
@@ -101,28 +83,49 @@ eta_ind_fun = function(x) (x>0)*(x<70)
 
 
 ###############################################################################
-#dirichlet simulation
+# Define the number of iterations, burn-in, and arguments in I-spline
 ###############################################################################
+# Define the number of 
 total=10000
 burnin=3000
 
-#the number of subjects
-n=dim(G)[1]
 #the number of knots and order
 klength = 20
 order = 3
 #the number of spline functions
 kk = klength-2+order
+
+################################################################################################
+# Load the data and preprocessing it for the model fitting
+################################################################################################
+load("C:/skinTumor.rda")
+n<-max(skinTumor$id)
+#record the number of observations for all patients
+k<-as.numeric(table(skinTumor$id))
+K<-max(k)
+tz<-matrix(,n,2*K)
+x1<-c();x2<-c();x3<-c();x4<-c();
+for (r in 1:n){
+  rownum<-which(skinTumor$id==r)
+  #record all observation times
+  tz[r,1:(2*k[r])]<-c(skinTumor[rownum,]$time, skinTumor[rownum,]$count)
+  x1[r]<-skinTumor[which(skinTumor$id==r),]$age[1]
+  x2[r]<-skinTumor[which(skinTumor$id==r),]$male[1]
+  x3[r]<-skinTumor[which(skinTumor$id==r),]$dfmo[1];
+  x4[r]<-skinTumor[which(skinTumor$id==r),]$priorTumor[1]
+}
+X<-cbind((x1-mean(x1))/sd(x1),x2,x3,(x4-mean(x4))/sd(x4))
+
+G<-cbind(X,tz)
+
+#the number of subjects
+n=dim(G)[1]
 #the number of parameters(beta)
 pars = 4
 #the number of columns in the dataset
 col_l = dim(G)[2]
 col = (col_l - pars)/2
 
-
-####################################################
-#set initial values and store vectors
-######################################################
 # observed times for each subject Ji
 Ji=(rowSums(!is.na(G)) - pars)/2
 
@@ -183,7 +186,9 @@ for (k in 1:n)
   sum1=sum1+Ji[k]
 }
 
-# inititial values
+####################################################
+# set initial values
+######################################################
 rl1 = matrix(rgamma(kk, 1, 1), ncol=kk)
 #beta
 beta1=matrix(rep(0, pars), ncol=1)
@@ -221,7 +226,7 @@ parW =  array(0,dim=c(total,n))
 parDenW = array(0,dim=c(total,length(t_s)))
 
 ################################################################
-#Simulation 
+# Start the sampling
 ################################################################
 for (iter in 2:total)
 { 
@@ -325,6 +330,9 @@ for (iter in 2:total)
 
 }
 
+####################################################
+# Get the posterior means
+######################################################
 
 estbeta = apply(parBeta[seq((burnin+1), total),], 2, mean)
 estbetaq = apply(parBeta[seq((burnin+1), total),], 2, quantile, c(0.025, 0.975))
